@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online Quiz</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f9f9f9; }
+        h1 { color: #333; text-align: center; }
+        .user-info { background-color: #e9ecef; padding: 15px; border-radius: 5px; margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 15px; }
+        .user-info label { display: flex; align-items: center; font-weight: bold; }
+        .user-info input { margin-left: 10px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        .question-block { background-color: #fff; padding: 20px; margin-bottom: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .question-block p { font-size: 16px; margin-top: 0; }
+        .options-label { display: block; margin-bottom: 8px; padding: 8px; border-radius: 4px; cursor: pointer; border: 1px solid transparent; transition: background-color 0.2s; }
+        .options-label:hover { background-color: #f1f1f1; }
+        .submit-btn { padding: 12px 24px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold; width: 100%; max-width: 250px; display: block; margin: 0 auto; }
+        .submit-btn:hover { background-color: #0056b3; }
+        .submit-btn:disabled { background-color: #cccccc; cursor: not-allowed; }
+        #result-display { margin-top: 20px; font-size: 18px; font-weight: bold; text-align: center; }
+        #loading { display: none; color: #007bff; font-weight: bold; margin-top: 15px; text-align: center; font-size: 16px; }
+    </style>
+</head>
+<body>
+
+    <h1>Online Practice Quiz</h1>
+    
+    <div class="user-info">
+        <label>Your Name: <input type="text" id="userName" placeholder="Enter your full name"></label>
+        <label>Roll Number: <input type="text" id="rollNumber" placeholder="Enter your roll number"></label>
+    </div>
+
+    <div id="quiz-container"></div>
+
+    <button class="submit-btn" id="submitBtn" onclick="calculateResult()">Submit Quiz</button>
+    <div id="loading">Submitting your result to the database, please wait...</div>
+    <div id="result-display"></div>
+
+    <script>
+     
+        const scriptURL ='https://script.google.com/macros/s/AKfycbwsT6Fb6QXLrHRJjK29nwtjEN3G33LehFzZ_OSvxYyPQMkvc2E_zPCs7eJ_5hYjIueN/exec'
+        
+       
+        const quizData = [
+            {
+                id: 1,
+                question: "What is Flask primarily used for in Python?",
+                options: ["Data Analysis", "Web Development", "Machine Learning", "Game Development"],
+                correctAnswer: "Web Development"
+            },
+            {
+                id: 2,
+                question: "Which of these is a key concept in Cyber Security?",
+                options: ["HTML Styling", "Encryption", "Database Indexing", "Video Editing"],
+                correctAnswer: "Encryption"
+            },
+            {
+                id: 3,
+                question: "In which format is the T20 World Cup played?",
+                options: ["50 overs", "Test Match", "20 overs", "100 balls"],
+                correctAnswer: "20 overs"
+            },
+            {
+                id: 4,
+                question: "Which pattern does the Django framework loosely follow?",
+                options: ["MVC (Model-View-Controller)", "MVT (Model-View-Template)", "MVVM (Model-View-ViewModel)", "Singleton"],
+                correctAnswer: "MVT (Model-View-Template)"
+            },
+            {  id: 6,
+                question: "HTTP का पोर्ट नंबर (Port Number) डिफ़ॉल्ट रूप से क्या होता है?",
+                options: ["443", "80", "21", "25"],
+                correctAnswer: "80"
+            },
+            {
+                id: 7,
+                question: "Flask में किसी पेज को रेंडर करने के लिए किस फंक्शन का उपयोग होता है?",
+                options: ["render_template", "show_html", "get_page", "display_view"],
+                correctAnswer: "render_template"
+            },
+            {
+                id: 8,
+                question: "SQL Injection किस प्रकार का हमला (Attack) है?",
+                options: ["Physical Attack", "Network Attack", "Database Attack", "Phishing"],
+                correctAnswer: "Database Attack"
+            },
+            {
+                id: 9,
+                question: "T20 वर्ल्ड कप में एक ओवर में अधिकतम कितने रन बन सकते हैं (बिना एक्स्ट्रा के)?",
+                options: ["24", "30", "36", "42"],
+                correctAnswer: "36"
+            },
+            {
+                id: 10,
+                question: "Python के पिता (Founder) कौन हैं?",
+                options: ["Guido van Rossum", "Dennis Ritchie", "James Gosling", "Bjarne Stroustrup"],
+                correctAnswer: "Guido van Rossum"
+            }
+        ];
+                
+
+        // ========================================================
+        // ⚙️ क्विज लोड करने का फंक्शन
+        // ========================================================
+        function loadQuiz() {
+            const container = document.getElementById('quiz-container');
+            let htmlContent = '';
+
+            quizData.forEach((q, index) => {
+                htmlContent += `<div class="question-block"><p><strong>Question ${q.id}: ${q.question}</strong></p>`;
+                q.options.forEach(opt => {
+                    htmlContent += `
+                        <label class="options-label">
+                            <input type="radio" name="question_${index}" value="${opt}"> ${opt}
+                        </label>
+                    `;
+                });
+                htmlContent += `</div>`;
+            });
+            container.innerHTML = htmlContent;
+        }
+
+        // ========================================================
+        // 📊 रिजल्ट कैलकुलेट और सबमिट करने का फंक्शन
+        // ========================================================
+        function calculateResult() {
+            const name = document.getElementById('userName').value.trim();
+            const roll = document.getElementById('rollNumber').value.trim();
+            const resultDiv = document.getElementById('result-display');
+            const submitBtn = document.getElementById('submitBtn');
+            const loadingText = document.getElementById('loading');
+
+            // वैलिडेशन
+            if (name === "" || roll === "") {
+                resultDiv.innerHTML = `<span style="color:red;">⚠️ Please enter your name and roll number before submitting.</span>`;
+                return;
+            }
+
+            let score = 0;
+
+            // सही/गलत चेक करना और UI अपडेट करना
+            quizData.forEach((q, index) => {
+                const selectedOption = document.querySelector(`input[name="question_${index}"]:checked`);
+                const allRadios = document.getElementsByName(`question_${index}`);
+
+                allRadios.forEach(radio => {
+                    radio.disabled = true; // ऑप्शंस लॉक करें
+                    let label = radio.parentElement;
+                    label.style.border = "1px solid #ccc";
+
+                    if (radio.value === q.correctAnswer) {
+                        label.style.backgroundColor = "#d4edda"; 
+                        label.style.color = "#155724";
+                        label.style.borderColor = "#c3e6cb";
+                        label.innerHTML += " <strong>✔️ Correct</strong>";
+                    } else if (selectedOption && radio === selectedOption) {
+                        label.style.backgroundColor = "#f8d7da"; 
+                        label.style.color = "#721c24";
+                        label.style.borderColor = "#f5c6cb";
+                        label.innerHTML += " <strong>❌ Wrong</strong>";
+                    }
+                });
+
+                if (selectedOption && selectedOption.value === q.correctAnswer) {
+                    score++;
+                }
+            });
+
+            // लोकल रिजल्ट दिखाएं
+            resultDiv.innerHTML = `<span style="color:green;">Thank you, ${name}! Your score is ${score} out of ${quizData.length}.</span>`;
+            
+            // बटन डिसएबल करें और लोडिंग दिखाएं
+            submitBtn.disabled = true;
+            loadingText.style.display = "block";
+
+            // Google Sheets को डेटा भेजना
+            const studentData = {
+                name: name,
+                roll: roll,
+                score: score,
+                total: quizData.length
+            };
+
+            fetch(scriptURL, {
+                method: 'POST',
+                body: JSON.stringify(studentData),
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+            })
+            .then(response => {
+                loadingText.style.display = "none";
+                alert("✅ Success! Your result has been saved to the database.");
+            })
+            .catch(error => {
+                loadingText.style.display = "none";
+                alert("⚠️ Error saving data online. Please check your internet connection.");
+                console.error('Error!', error.message);
+            });
+        }
+
+        // पेज लोड होते ही क्विज दिखाएं
+        window.onload = loadQuiz;
+    </script>
+</body>
+</html>
